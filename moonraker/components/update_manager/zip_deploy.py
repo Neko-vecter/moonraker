@@ -220,14 +220,19 @@ class ZipDeploy(AppDeploy):
                 self.log_info("Invalid Installation, aborting remote refresh")
                 return {}
             repo = self.repo
+
+        # need server support 
         if tag is not None:
-            resource = f"repos/{repo}/releases/tags/{tag}"
+            resource = f"{repo}/tags/{tag}"
         elif self.channel == Channel.STABLE:
-            resource = f"repos/{repo}/releases/latest"
+            resource = f"{repo}/latest"
         else:
-            resource = f"repos/{repo}/releases?per_page=1"
+            resource = f"{repo}"
+
+        # start to request api 
         client = self.cmd_helper.get_http_client()
-        resp = await client.github_api_request(
+
+        resp = await client.release_api_request(
             resource, attempts=3, retry_pause_time=.5
         )
         release: Union[List[Any], Dict[str, Any]] = {}
@@ -240,7 +245,7 @@ class ZipDeploy(AppDeploy):
                 # Either not necessary or not possible to restore from cache
                 return {}
         elif resp.has_error():
-            self.log_info(f"Github Request Error - {resp.error}")
+            self.log_info(f"Request Error - {resp.error}")
             self.last_error = str(resp.error)
             return {}
         else:

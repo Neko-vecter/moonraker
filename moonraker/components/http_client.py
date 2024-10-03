@@ -213,6 +213,38 @@ class HttpClient:
             self.gh_limit_reset_time = float(
                 resp_hdrs['X-Ratelimit-Reset'])
         return resp
+    
+    async def release_api_request(
+        self,
+        resource: str,
+        attempts: int = 1,
+        retry_pause_time: float = .1
+    ) -> HttpResponse:
+        url = resource
+        if (
+            self.gh_limit_reset_time is not None and
+            self.gh_limit_remaining == 0
+        ):
+            curtime = time.time()
+            if curtime < self.gh_limit_reset_time:
+                reset_time = time.ctime(self.gh_limit_reset_time)
+                raise self.server.error(
+                    f"GitHub Rate Limit Reached\n"
+                    f"Request: {url}\n"
+                    f"Limit Reset Time: {reset_time}"
+                )
+        headers = {"Accept": "application/vnd.github.v3+json"}
+        resp = await self.get(
+            url, headers, attempts=attempts,
+            retry_pause_time=retry_pause_time)
+        resp_hdrs = resp.headers
+        if 'X-Ratelimit-Limit' in resp_hdrs:
+            self.gh_rate_limit = int(resp_hdrs['X-Ratelimit-Limit'])
+            self.gh_limit_remaining = int(
+                resp_hdrs['X-Ratelimit-Remaining'])
+            self.gh_limit_reset_time = float(
+                resp_hdrs['X-Ratelimit-Reset'])
+        return resp
 
     def github_api_stats(self) -> Dict[str, Any]:
         return {

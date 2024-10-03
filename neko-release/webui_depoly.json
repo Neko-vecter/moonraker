@@ -1,0 +1,11 @@
+{
+    "name": "v1.0.0",
+    "assets": [
+        {
+            "content_type": "application/zip",
+            "download_url": "< url to download >",
+            "size": < release file size in bytes >
+        }
+    ],
+    "prerelease": false 
+}
